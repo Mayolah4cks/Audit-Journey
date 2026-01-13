@@ -1,3 +1,6 @@
+**Program:** Notion
+
+**Title:** Attacker can duplicate template of public pages despite "Duplicate as template” being disabled by the page creator 
 ## Description:
 
 Notion allows workspace owners to publish pages publicly while disabling duplication to prevent others from copying the page as a template. This restriction is enforced at the UI level.
