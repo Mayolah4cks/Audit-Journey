@@ -1,9 +1,9 @@
 **Program:** Tiktok
 
-**Title:** Removed Organization Member Can Add Themselves as App Sandbox Target User via GraphQL Using developer_id and sandbox_client_key
+**Title:** Non-Organization Member Can Add Themselves as App Sandbox Target User via GraphQL Using developer_id and sandbox_client_key
 ## Description:
 
-A removed organization member can add themselves as a sandbox target user of an organization app by sending a direct GraphQL request using a previously known developer_id (of an active org member) and the sandbox’s client_key.
+A Non-organization member can add themselves as a sandbox target user of an organization app by sending a direct GraphQL request using a previously known developer_id (of an active org member) and the sandbox’s client_key.
 
 The endpoint validates the provided developer_id instead of verifying whether the authenticated user (from session cookie) is still a member of the organization.
 
@@ -42,11 +42,9 @@ Accept-Encoding: gzip, deflate, br
 Accept-Language: en-GB,en-US;q=0.9,en;q=0.8
 Priority: u=1, i
 ```
-6. As org admin Remove the added member from the organization.
+6. As the added member leave the organization here (https://developers.tiktok.com/portal/organization/ORG_ID?tab=settings)
 
-7.Log in as the removed member.
-
-8. Now as the removed member Send the following request:
+7. Now as the removed member Send the following request:
 ```
 POST /tiktok/v2/oauth/sandbox/targetuser/add/ HTTP/2
 Host: www.tiktok.com
@@ -69,7 +67,7 @@ Priority: u=1, i
 
 {"client_key":"SANDBOX_CLIENT_KEY","developer_id":"ORG_OWNER_DEVELOPER_ID"}
 ```
-9. Observe that The removed member has successfully added themselve as a sandbox target user.
+8. Observe that The removed member has successfully added themselve as a sandbox target user.
 
 ## Actual Behavior
 
