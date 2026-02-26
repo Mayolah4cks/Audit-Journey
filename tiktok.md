@@ -1,18 +1,16 @@
 **Program:** Tiktok
 
-**Title:** Attacker can have access to watch private account videos and subscription based content via TikTok Symphony Creative Studio remix endpoint
+**Title:** Attacker can have access to watch subscription based content via TikTok Symphony Creative Studio remix endpoint
 
 ## Description:
 
-The TikTok Symphony Creative Studio endpoint responsible for video remix generation (`/creative_bff_i18n/api/cue/p2v/generate`) does not revalidate the current authorization state of a video when a `vid` is supplied.
+The TikTok Symphony Creative Studio endpoint responsible for video remix generation (`/creative_bff_i18n/api/cue/p2v/generate`) does not revalidate the current authorization state of subscriber-only videos when a `vid` is supplied.
 
-An attacker who previously had legitimate access to a video can retain the vid identifier and continue generating remix outputs containing the full visual content of the original video, even after the account switches from public to private
-
-This allows persistent access to content that should no longer be accessible, violating the creator’s privacy expectations.
+An attacker who was previously subscribed to a paid video can save the `video_id` while they have access, and after their subscription ends, they can still generate remix outputs containing the full visual content of the video. This bypasses TikTok’s subscription restrictions and allows persistent access to content that should no longer be available.
 
 ## Steps to Reproduce
 
-1. Identify a video from a public TikTok account.
+1. Subscribe to a subscriber-only video.
 2. Capture its video identifier by running the graph ql request below
 ```
 GET <video_link> HTTP/2
@@ -37,7 +35,7 @@ Priority: u=0, i
 you should find the video_id in the response as shown in the image below
 <img width="464" height="423" alt="Screenshot 2026-02-26 120729" src="https://github.com/user-attachments/assets/794f1643-fe2e-4eb0-a668-85172d77cdc3" />
 
-3. Have the account owner switch their account to private.
+3. Allow the subscription to expire
 
 4. As the attacker Confirm the video is no longer accessible through normal TikTok interfaces.
 
@@ -68,15 +66,19 @@ Priority: u=1, i
 
 {"imageList":[],"vidList":[{"Vid":"saved_video_id","Duration":}],"productId":"","productName":"","sellingPoint":"","scriptSetting":{"language":"en","script_style":[]},"duration":0,"useCreativeTemplate":true,"videoSize":{"2":1,"4":2,"8":1},"creativeStrategyIdList":[],"generateTimes":1,"userScenario":"NoUserInputs","miniAppType":"P2V","settings":""
 ```
-7. Now as the attacker go back to (https://ads.tiktok.com/creative/creativestudio/create/history) and Observe that the system generates remix variations containing the full visual content of the original private video.
+7. Now as the attacker go back to (https://ads.tiktok.com/creative/creativestudio/create/history) and Observe that the system generates remix variations containing the full visual content of the subscription based content video.
 <img width="959" height="484" alt="Screenshot 2026-02-26 121927" src="https://github.com/user-attachments/assets/cb117334-6e75-4aaa-bffe-107ea84c78eb" />
 
-## More Findings
+## Actual Behavior
 
-The same issue also affects subscriber-only content: an attacker who was previously subscribed to a subscriber based video can save the video’s `video_id` while they still have access, and after their subscription ends — even though they no longer have authorized access — they can continue generating remix outputs containing the full visual content of the video, effectively bypassing subscription restrictions.
+- The endpoint processes the vid without checking subscription status.
+
+- Even after the subscription ends, remix outputs include the full original video.
+
+- Audio is replaced with AI narration, but the full visual content is exposed.
 
 ## Impact:
-This vulnerability allows attackers to persistently access videos that should no longer be accessible, violating privacy and bypassing content access controls. 
+This vulnerability allows attackers to persistently access and watch subscriber-only videos after their subscription ends, bypassing TikTok’s content access controls. Because these videos cannot be downloaded or saved normally, this effectively allows full continued access to paid content that should otherwise be restricted.
   
 **weakness**: Improper access control
 
