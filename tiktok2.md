@@ -16,7 +16,7 @@ I tested this as follows:
 4. I then switched the **creator’s account to private** — posting the same draft reply **succeeded**, and the reply overlay still displayed:  
    - the **comment text**  
    - the **commenter's name**  
-   - the **reply reference to the video**  
+   - the **reply overlay reference to the video**  
 
 This means that **non-followers of the private account can see content (comment + username + reply overlay) that should be restricted**, creating a privacy and low-integrity issue. TikTok enforces privacy at the **video level** but not at the **account level** for this feature.
 
@@ -25,10 +25,16 @@ This means that **non-followers of the private account can see content (comment 
 ## Steps to Reproduce
 1. Find a public video on TikTok with a comment.  
 2. Use **Reply with Video** on the comment by press holding the comment and selecting "Reply With Video"
-3. record a video and save it as draft.  
+  ![IMG_2885](https://github.com/user-attachments/assets/c122a5e0-dfb2-4d56-89c8-f21f1ad56867)
+ 
+3. record a video and save it as draft.
+   ![IMG_2886](https://github.com/user-attachments/assets/f7dedabd-43a6-4ebc-ba78-ce941c1bf440)
+
 4. Go to Account Settings and Privacy and Make the **creator’s account private**.  
 5. As attacker Post the draft reply.  
-6. Observe that Attacker Has successfully replied to the comment of vudeo they no longer have access to and Verify that a **non-follower account** can see the comment text, commenter name, and reply overlay.  
+6. Observe that Attacker Has successfully replied to the comment of vudeo they no longer have access to and Verify that a **non-follower account** can see the comment text, commenter name, and reply overlay.
+   ![IMG_2891](https://github.com/user-attachments/assets/1a279818-b2db-41ce-bda4-78a0277765c6)
+
 
 ---
 
