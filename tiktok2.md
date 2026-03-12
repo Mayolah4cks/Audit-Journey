@@ -1,50 +1,46 @@
 **Program:** Tiktok  **Asset:** 835599320  **Weakness:** Business Logic Error
 
-**Title: Ability to Post Reply with Video to Comments from Private Accounts
+**Title: Reply with Video Drafts Can Expose Comments and Usernames from Deactivated Accounts
 ## Description:
 
-While testing TikTok’s **Reply with Video** feature, I noticed an **inconsistent privacy enforcement**:  
+While testing the **Reply with Video** feature on TikTok, I discovered that it is possible to publish a reply video referencing a comment from a user who has since **deactivated their account**.
 
-- When a video is made **private**, TikTok correctly blocks posting a reply video to comments on that video.  
-- However, when the **creator switches their entire account to private**, TikTok **does not block replies**, allowing the video reply to be posted.  
+When a reply video is drafted before the commenter deactivates their account, the draft retains the **comment text and the original username** in the reply overlay. If the commenter later deactivates their account and their comment becomes unavailable on the platform, the drafted reply video can still be published.
 
-I tested this as follows:  
+As a result, the published video continues to display the **original username and comment text** in the reply overlay, even though the source comment and account are no longer accessible on TikTok.
 
-1. I found a **public video** and used the **Reply with Video** feature on a comment.  
-2. I recorded a reply and **saved it as a draft** without posting.  
-3. I first made the **video itself private** — posting the draft reply was correctly blocked.  
-4. I then switched the **creator’s account to private** — posting the same draft reply **succeeded**, and the reply overlay still displayed:  
-   - the **comment text**  
-   - the **commenter's name**  
-   - the **reply overlay reference to the video**  
+This behavior applies both to:
+- comments made by the user **under their own videos**, and
+- comments the user made **under any other videos across the platform**.
 
-This means that **non-followers of the private account can see content (comment + username + reply overlay) that should be restricted**, creating a privacy and low-integrity issue. TikTok enforces privacy at the **video level** but not at the **account level** for this feature.
+If a reply video draft exists for those comments, it can still be published after the account is deactivated, preserving the **username and comment text** in the reply overlay.
+
+During testing, I also observed that TikTok correctly prevents this action when a **video is made private** or when an **account is switched to private**. In those cases, attempting to publish the drafted reply video results in an error indicating that the video or comment source no longer exists.
+
+However, when the account is **deactivated**, the system does not perform the same validation and still allows the reply video to be published.
 
 ---
 
 ## Steps to Reproduce
-1. Find a public video on TikTok with a comment.  
-2. Use **Reply with Video** on the comment by press holding the comment and selecting "Reply With Video"
-  ![IMG_2885](https://github.com/user-attachments/assets/c122a5e0-dfb2-4d56-89c8-f21f1ad56867)
- 
-3. record a video and save it as draft.
-   ![IMG_2886](https://github.com/user-attachments/assets/f7dedabd-43a6-4ebc-ba78-ce941c1bf440)
-
-4. Go to Account Settings and Privacy and Make the **creator’s account private**.  
-5. As attacker Post the draft reply.  
-6. Observe that Attacker Has successfully replied to the comment of vudeo they no longer have access to and Verify that a **non-follower account** can see the comment text, commenter name, and reply overlay.
-   ![IMG_2891](https://github.com/user-attachments/assets/1a279818-b2db-41ce-bda4-78a0277765c6)
+1. Account A posts a comment on any TikTok video.
+2. Account B selects the comment and uses the **Reply with Video** feature.
+3. Account B records a reply video and saves it as a **draft**.
+4. Account A **deactivates their TikTok account**.
+5. Confirm from a third account that the **original comment is no longer visible on the platform**.
+6. Account B publishes the drafted reply video.
+7. The reply video is successfully posted and still displays:
+   - **@original_username**
+   - **the original comment text** in the reply overlay.
+![IMG_2891](https://github.com/user-attachments/assets/70f9d237-214d-4060-a68a-cdee8a050783)
 
 
 ---
 
 ## Impact
-- Exposes **comment text** from a private account  
-- Exposes the **name** of the commenter  
-- Shows the **reply overlay reference**  
-- Allows posting a reply to content the user should no longer have access to  
+This behavior allows comments and usernames from **deactivated accounts** to remain publicly visible through previously drafted reply videos.
 
-This is a **privacy and low-integrity violation**, as users can interact with content they should no longer see.
+Even though the original comment and account are no longer accessible on the platform, the reply video still preserves and exposes this information to other users viewing the video.
+
 
 ---
 
@@ -59,12 +55,9 @@ This is a **privacy and low-integrity violation**, as users can interact with co
 | User Interaction (UI) | None |
 | Scope (S) | Unchanged |
 | Confidentiality (C) | Low |
-| Integrity (I) | Low |
+| Integrity (I) | None |
 | Availability (A) | None |
 
 ---
-
-## Notes / Additional Information
-- TikTok **correctly blocks replies when a video is private**, showing the privacy check exists.  
 - The bug occurs because **account-level privacy is not enforced** for the Reply with Video feature.  
 - Could be exploited at scale if users save drafts and creators switch accounts to private.
