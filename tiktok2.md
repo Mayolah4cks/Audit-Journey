@@ -1,45 +1,33 @@
-**Program:** Tiktok  **Asset:** 835599320  **Weakness:** Business Logic Error
+**Program:** Tiktok  **Asset:** 835599320  **Weakness:** Imporper Access Control
 
-**Title: Reply with Video Drafts Can Expose Comments and Usernames from Deactivated Accounts
+**Title: Improper Access Control Allows Sharing of Private Account Comment to Story
 ## Description:
 
-While testing the **Reply with Video** feature on TikTok, I discovered that it is possible to publish a reply video referencing a comment from a user who has since **deactivated their account**.
+TikTok allows users to share comments from videos to their stories. Normally, the platform prevents users from sharing comments that belong to private accounts. However, this restriction can be bypassed due to improper validation timing.
 
-When a reply video is drafted before the commenter deactivates their account, the draft retains the **comment text and the original username** in the reply overlay. If the commenter later deactivates their account and their comment becomes unavailable on the platform, the drafted reply video can still be published.
+If a story draft containing a comment is created while the commenter’s account is public, and the commenter later changes their account to private, the drafted story can still be published successfully. TikTok does not revalidate the commenter’s privacy status when the story is posted.
 
-As a result, the published video continues to display the **original username and comment text** in the reply overlay, even though the source comment and account are no longer accessible on TikTok.
-
-This behavior applies both to:
-- comments made by the user **under their own videos**, and
-- comments the user made **under any other videos across the platform**.
-
-If a reply video draft exists for those comments, it can still be published after the account is deactivated, preserving the **username and comment text** in the reply overlay.
-
-During testing, I also observed that TikTok correctly prevents this action when a **video is made private** or when an **account is switched to private**. In those cases, attempting to publish the drafted reply video results in an error indicating that the video or comment source no longer exists.
-
-However, when the account is **deactivated**, the system does not perform the same validation and still allows the reply video to be published.
+This results in the comment from a now-private account being exposed through the attacker’s story, even though TikTok normally prevents sharing such comments.
+![Image](https://github.com/user-attachments/assets/51d7e9af-73b2-460b-bd23-a404127e8da7)
 
 ---
 
 ## Steps to Reproduce
-1. Account A posts a comment on any TikTok video.
-2. Account B selects the comment and uses the **Reply with Video** feature.
-3. Account B records a reply video and saves it as a **draft**.
-4. Account A **deactivates their TikTok account**.
-5. Confirm from a third account that the **original comment is no longer visible on the platform**.
-6. Account B publishes the drafted reply video.
-7. The reply video is successfully posted and still displays:
-   - **@original_username**
-   - **the original comment text** in the reply overlay.
-![IMG_2891](https://github.com/user-attachments/assets/70f9d237-214d-4060-a68a-cdee8a050783)
+1. Find a video with a comment from a user whose account is currently public.
+2. Tap the option to share the comment to your TikTok story and make some changes to the video by repositioning the video and Save the story as a draft without publishing it. (As shown in the poc below)
+   https://github.com/user-attachments/assets/66a1cb3b-3735-4ea9-9095-834110ae2703
+3. Now commenter makes their account private, observe you can no longer share their comment on story.
+   ![Image](https://github.com/user-attachments/assets/3e3a41b0-1336-4194-8866-6b6dcd232fa0)
+4. As attacker Return to the drafted story.
+   ![Image](https://github.com/user-attachments/assets/24729a51-e718-4902-856b-6637306f6d71)
+5. Publish the story.
+6. Observe that you've succefully shared the comment of a private account on your story
 
 
 ---
 
 ## Impact
-This behavior allows comments and usernames from **deactivated accounts** to remain publicly visible through previously drafted reply videos.
-
-Even though the original comment and account are no longer accessible on the platform, the reply video still preserves and exposes this information to other users viewing the video.
+An attacker can publish a comment from a private account to their story by drafting the story before the account becomes private. This bypasses TikTok’s restriction that normally prevents comments from private accounts from being shared to stories.
 
 
 ---
@@ -55,9 +43,7 @@ Even though the original comment and account are no longer accessible on the pla
 | User Interaction (UI) | None |
 | Scope (S) | Unchanged |
 | Confidentiality (C) | Low |
-| Integrity (I) | None |
+| Integrity (I) | low |
 | Availability (A) | None |
 
 ---
-- The bug occurs because **account-level privacy is not enforced** for the Reply with Video feature.  
-- Could be exploited at scale if users save drafts and creators switch accounts to private.
