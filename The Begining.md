@@ -51,6 +51,8 @@ Because of this vulnerability, an attacker can listen to the **entire spoken con
 ## Impact
 A non-subscriber can listen to the full audio of subscriber-only videos using the **“Use Sound”** feature, bypassing the subscription restriction and exposing exclusive subscriber content.
 
+Because the full audio track of the subscriber-only video is accessible, an attacker can obtain the complete spoken content of the restricted video. For many creators, the audio contains the entire message of the content, meaning the attacker can access all information intended only for subscribers.
+
 ---
 
 ## Severity
