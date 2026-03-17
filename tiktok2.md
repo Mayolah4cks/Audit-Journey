@@ -1,64 +1,83 @@
-**Program:** Tiktok  **Asset:** 835599320  **Weakness:** Business Logic Error
+**Program:** Tiktok  **Asset:** 835599320  **Weakness:** Iproper Access Control
 
-**Title: Removed group member can access ongoing game and view updated participant list and scores
+**Title: Removed admin-added group member can bypass invite restrictions and fully rejoin group
 ## Description:
 
-When a user is added to a group and is later removed from the group, they lose access to the group as expected. However, the user can still access the previously initiated game instance and interact with it.
+When a group is created, the admin can add members directly either **at creation** or **later manually**. Once added, users can participate in the group normally.  
 
-- Upon playing, the removed user can view the scores and identities of participants who played after their removal (unauthorized information disclosure).
+**Observed Bug Behavior:**
 
-- Additionally, the removed user’s score is later incorporated into the shared scoreboard and ranked among current participants, if they Play their turn before some members in the group. their own score later appear in the shared scoreboard once any participant plays their turn after the removed user plays.
+If an admin adds a user at group creation (e.g., User A) and later removes them, all intended restrictions to prevent re-entry fail. Specifically:
 
-This indicates that the game system relies on stale authorization and does not revalidate whether the user is still a member of the group before giving them access.
+1. Admin attempts to enforce restrictions by:  
+   - Generating a new invite link (which should revoke old links)  
+   - Disabling all invite links  
+   - Requiring admin approval for join requests  
+
+2. Despite these measures, User A can still rejoin the group using the **original invite link issued at creation**.  
+
+3. Upon rejoining, User A gains **full privileges**, including:  
+   - Viewing all existing messages  
+   - Sending new messages  
+   - Seeing all current and newly added group members  
+
+4. These restrictions only work for users added by **non-admin members**, not for **admin-added users**.  
+
+This demonstrates a **broken access control / privilege bypass**, where the system continues to trust prior membership or admin-added status instead of enforcing **current authorization**. Removed users can regain full access without any additional user interaction.
+
+
 
 ---
 
 ## Steps to Reproduce
-1. Create or open a group for this test make sure to add 4 people (member 1-4)
-   ![IMG_3068](https://github.com/user-attachments/assets/e87b16e7-44d3-4a97-aa3f-666a371eb4d6)
-2. Start a game within the group (for example "Fruite Cutter Game")
-   ![IMG_3065](https://github.com/user-attachments/assets/def76b27-45e1-4ef7-a69c-8ac0fa93e9cb)
-![IMG_3066](https://github.com/user-attachments/assets/436a1fa3-7a44-465a-94e1-41adb9e38afe)
+1. Create a group as an admin.
+   ![IMG_3068](https://github.com/user-attachments/assets/4b80bf7e-109f-410e-a790-6381afda3303)
 
-3. As the initiator of the game start the game and wait for other members to play their turn
- ![IMG_3074](https://github.com/user-attachments/assets/5f9061d3-e0ce-4474-921f-5e8cea4c9918)
+2. Add a user (User A) directly at group creation (make sure you and the user are not friends so and invite can be sent to them) and click create
+![IMG_3085](https://github.com/user-attachments/assets/94ac4e85-4fb8-48f2-b631-29b7538f1079)
 
-4. As admin of the group, before anyone in the group plays their turn, remove one of the member (for this example **member 2**) before they play their turn by going to the member list and clicking the three dot and then click remove
-![IMG_3067](https://github.com/user-attachments/assets/ec05c72e-9303-4ba2-8fc1-42bf44c7c56a)
+3. As User A use the invite sent to join the group
+   ![IMG_3086](https://github.com/user-attachments/assets/7bc8f93c-23a1-4153-be1b-5f6240dd5ad8)
 
-5. after the member removal make sure **member 3** who is currently in the group has played their turn in the game and have recieved their score and ranking
-6. (Before **member 4** plays) From the removed user’s account:
+4. As admin of the group Remove User A from the group.
 
-- Access the previously initiated game
-![IMG_3071](https://github.com/user-attachments/assets/25b9517f-571a-4df3-b2d1-5ce90f19dfda)
+5. Attempt to restrict their access using:
 
-- Click Play to play their turn
-7. After playing their turn Observe that the removed user can:
+- Generate a new invite link (which should revoke old invites)
+![IMG_3088](https://github.com/user-attachments/assets/e3962c75-79bf-4d34-8ddb-c9a437b11319)
 
-- View the updated scoreboard with every member's score including **member 3** score (even though they were no longer in the group when they played their turn
+- Disable invite links
+![IMG_3089](https://github.com/user-attachments/assets/b438722b-f4f8-4b46-9445-048abb5001ba)
 
-- See participants of the game
-![IMG_3059](https://github.com/user-attachments/assets/505df46a-9c21-4d9c-be21-67449fa5e9f1)
+- Enable Require admin approval to join
+  ![IMG_3090](https://github.com/user-attachments/assets/5a5b718f-af64-4114-bc74-d7c1d7aa15c5)
 
-8. Now Observe that after the last member which is **member 4** plays their turn 
+6. Have User A use the original invite link from when they were added at creation.
+   
+7. Observe that User A:
 
-- The scoreboard in the group updates
+- Rejoin the group
+  
+- Can send messages freely
 
-- The removed user’s previously submitted score is now included
-
-- The removed user is ranked among current participants based on their score
-
+- Can see all current and newly added group members
 
 ---
 
 ## Impact
-A removed group member can keep viewing updated group game data and discover newly added group members (who joined after their removal) if those members participate in the game. And also have their gameplay results later incorporated into the shared scoreboard if they play before everyone in the group.
+A removed admin-added member can bypass all group access restrictions and regain **full privileges**, resulting in:
+
+- **Confidentiality breach:** full access to messages and group members  
+- **Integrity breach:** ability to send messages and affect group state  
+- **Loss of admin control:** Admin has no effective control over their access.
+
+Restrictions only work for users added by **non-admin members**, not for **admin-added users**.  
 
 
 ---
 
 ## Severity
-**CVSS v3.0 Base Score:** 5.4 → Medium  
+**CVSS v3.0 Base Score:** 7.6 → Medium  
 
 | Metric | Value |
 |--------|-------|
@@ -67,7 +86,7 @@ A removed group member can keep viewing updated group game data and discover new
 | Privileges Required (PR) | Low |
 | User Interaction (UI) | None |
 | Scope (S) | Unchanged |
-| Confidentiality (C) | Low |
+| Confidentiality (C) | High |
 | Integrity (I) | low |
 | Availability (A) | None |
 
