@@ -1,77 +1,62 @@
-**Program:** Tiktok  **Asset:** 835599320  **Weakness:** Iproper Access Control
+**Program:** Tiktok  **Asset:** business.tiktok.com  **Weakness:** Improper Access Control
 
-**Title: Removed admin-added group member can bypass invite restrictions and fully rejoin group
+**Title: Authorization Bypass Allows Removed Members to Access Draft Content via Direct Edit URLs
 ## Description:
 
-When a group is created, the admin can add members directly either **at creation** or **later manually**. Once added, users can participate in the group normally.  
+When a user is granted permissions to manage a connected TikTok account within a Business Center organization, they are able to access and edit draft content through the content management interface.
 
-**Observed Bug Behavior:**
+However, after the user's permissions are revoked, access control is only partially enforced. While the user is correctly blocked from accessing the main content management page, the application fails to enforce authorization checks on direct draft edit endpoints.
 
-If an admin adds a user at group creation (e.g., User A) and later removes them, all intended restrictions to prevent re-entry fail. Specifically:
-
-1. Admin attempts to enforce restrictions by:  
-   - Generating a new invite link (which should revoke old links)  
-   - Disabling all invite links  
-   - Requiring admin approval for join requests  
-
-2. Despite these measures, User A can still rejoin the group using the **original invite link issued at creation**.  
-
-3. Upon rejoining, User A gains **full privileges**, including:  
-   - Viewing all existing messages  
-   - Sending new messages  
-   - Seeing all current and newly added group members  
-
-4. These restrictions only work for users added by **non-admin members**, not for **admin-added users**.  
-
-This demonstrates a **broken access control / privilege bypass**, where the system continues to trust prior membership or admin-added status instead of enforcing **current authorization**. Removed users can regain full access without any additional user interaction.
+As a result, the removed user can still access draft content by revisiting previously saved edit URLs. This indicates that the backend does not properly validate user permissions when accessing specific draft resources.
 
 
 
 ---
 
 ## Steps to Reproduce
-1. Create a group as an admin.
-   ![IMG_3068](https://github.com/user-attachments/assets/4b80bf7e-109f-410e-a790-6381afda3303)
+1. Log in to TikTok Business Center and create a new organization.
 
-2. Add a user (User A) directly at group creation (make sure you and the user are not friends so and invite can be sent to them) and click create
-![IMG_3085](https://github.com/user-attachments/assets/94ac4e85-4fb8-48f2-b631-29b7538f1079)
+2. Connect a TikTok account to the organization by navigating to(https://business.tiktok.com/manage/accounts/tiktok-accounts?org_id=ORG_ID)
 
-3. As User A use the invite sent to join the group
-   ![IMG_3086](https://github.com/user-attachments/assets/7bc8f93c-23a1-4153-be1b-5f6240dd5ad8)
+3. Add a new team member to the organization and Assign the team member: Standard role
 
-4. As admin of the group Remove User A from the group.
+4. As admin Go to (https://business.tiktok.com/manage/business-suite/content-management?org_id=ORG_ID) and add couple new video and save them as draft
+<img width="959" height="416" alt="Screenshot 2026-03-19 231956" src="https://github.com/user-attachments/assets/e2f22c13-c182-4ac8-ab4a-664f331f3842" />
 
-5. Attempt to restrict their access using:
+5. Next go to (https://business.tiktok.com/manage/accounts/tiktok-accounts?org_id=ORG_ID) and Grant the added team memeber all permission to manage the connected TikTok account
+<img width="668" height="311" alt="Screenshot 2026-03-19 232457" src="https://github.com/user-attachments/assets/06fb9085-492a-404b-bb96-d9203071bf58" />
+<img width="846" height="454" alt="Screenshot 2026-03-19 230334" src="https://github.com/user-attachments/assets/b0669631-c59e-47a0-92d7-6e260da24a18" />
 
-- Generate a new invite link (which should revoke old invites)
-![IMG_3088](https://github.com/user-attachments/assets/e3962c75-79bf-4d34-8ddb-c9a437b11319)
-
-- Disable invite links
-![IMG_3089](https://github.com/user-attachments/assets/b438722b-f4f8-4b46-9445-048abb5001ba)
-
-- Enable Require admin approval to join
-  ![IMG_3090](https://github.com/user-attachments/assets/5a5b718f-af64-4114-bc74-d7c1d7aa15c5)
-
-6. Have User A use the original invite link from when they were added at creation.
+6. Log in as the added team member (attacker)
    
-7. Observe that User A:
+7. Navigate to the content management page (https://business.tiktok.com/manage/business-suite/content-management?org_id=ORG_ID) and Go to the Drafts tab.
+   <img width="808" height="449" alt="Screenshot 2026-03-19 225536" src="https://github.com/user-attachments/assets/c8fb66c0-535e-4fde-8a2b-6d2ac2610a92" />
 
-- Rejoin the group
-  
-- Can send messages freely
+8. Click “Edit Post” on any of the existing draft.
+<img width="959" height="449" alt="Screenshot 2026-03-19 225700" src="https://github.com/user-attachments/assets/a9623d5a-0b94-49af-8224-989f24b0aee2" />
+9. Copy the URL of the edit page (this is important — it contains the direct reference to the draft resource).
+<img width="959" height="511" alt="Screenshot 2026-03-19 232934" src="https://github.com/user-attachments/assets/79a9de61-4ae1-47cb-9000-cee2664c1f3a" />
+10. Log back in as the organization owner/admin.
+11. Go back to (https://business.tiktok.com/manage/accounts/tiktok-accounts?org_id=ORG_ID) and Remove the team member’s permission to manage the TikTok account 
+<img width="959" height="451" alt="Screenshot 2026-03-19 233205" src="https://github.com/user-attachments/assets/b26498ea-939c-4b39-a4bf-8f1fdcd9e18e" />
+12. Log back in as the removed/downgraded team member.
+13. Attempt to access the content management page again (https://business.tiktok.com/manage/business-suite/content-management?org_id=ORG_ID) and observe that access is correctly denied
+14. Now paste and open the previously copied draft edit URL, Observe that The draft edit page loads successfully. The user can:
 
-- Can see all current and newly added group members
+- View the draft video
+
+- See captions and metadata
+
+- See scheduled time
+
+- Observe any new updates made after permission removal
 
 ---
 
 ## Impact
-A removed admin-added member can bypass all group access restrictions and regain **full privileges**, resulting in:
+A removed team member can continue to access draft posts using previously saved edit URLs, even after their permissions have been revoked. This allows them to view unpublished videos, captions, and scheduling details without authorization.
 
-- **Confidentiality breach:** full access to messages and group members  
-- **Integrity breach:** ability to send messages and affect group state  
-- **Loss of admin control:** Admin has no effective control over their access.
-
-Restrictions only work for users added by **non-admin members**, not for **admin-added users**.  
+Additionally, any changes made to the draft after the user’s access has been removed are still visible to them. This means the attacker can continuously monitor updates, edits, or newly modified content, leading to ongoing exposure of sensitive business information. 
 
 
 ---
