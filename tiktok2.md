@@ -37,9 +37,11 @@ As a result, the removed user can still access draft content by revisiting previ
 9. Copy the URL of the edit page (this is important — it contains the direct reference to the draft resource).
 <img width="959" height="511" alt="Screenshot 2026-03-19 232934" src="https://github.com/user-attachments/assets/79a9de61-4ae1-47cb-9000-cee2664c1f3a" />
 10. Log back in as the organization owner/admin.
+    
 11. Go back to (https://business.tiktok.com/manage/accounts/tiktok-accounts?org_id=ORG_ID) and Remove the team member’s permission to manage the TikTok account 
 <img width="959" height="451" alt="Screenshot 2026-03-19 233205" src="https://github.com/user-attachments/assets/b26498ea-939c-4b39-a4bf-8f1fdcd9e18e" />
 12. Log back in as the removed/downgraded team member.
+
 13. Attempt to access the content management page again (https://business.tiktok.com/manage/business-suite/content-management?org_id=ORG_ID) and observe that access is correctly denied
 14. Now paste and open the previously copied draft edit URL, Observe that The draft edit page loads successfully. The user can:
 
