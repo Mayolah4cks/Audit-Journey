@@ -79,7 +79,8 @@ Content-Length: 48
 7. Observe that the request succeeds
 8. Now as the organization owner go to the apps setting page (e.g: https://portal.au.frontegg.com/development/applications/APP_ID) and observe that the API Key as been regenerated
 9. Verification of Proper Permission Checks (for context):
-**CREATE APP ATTEMPT** (Run the graph ql reuest below Using the same cookie and bearer token and observe the response `"errors":["Missing permissions: dp.applications.write.app"]`)
+
+  **CREATE APP ATTEMPT** (Run the graph ql reuest below Using the same cookie and bearer token and observe the response `"errors":["Missing permissions: dp.applications.write.app"]`)
 ```
 POST /applications/resources/applications/v1 HTTP/2
 Host: api.au.frontegg.com
